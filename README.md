@@ -68,34 +68,61 @@ curl --location 'https://4aggsev0f5.execute-api.us-east-1.amazonaws.com/dev/appo
 
 ---
 
-## 🧪 Desarrollo local
-
-La forma más rápida de probar tu función localmente es usar el siguiente comando:
-
-```bash
-serverless dev
-```
-
-Esto iniciará un emulador local de AWS Lambda y establecerá un túnel para enrutar solicitudes reales hacia tu función local.
-
-Ahora puedes invocar tus endpoints como si estuvieran en la nube, pero con la lógica ejecutándose localmente, lo cual acelera el desarrollo.
-
-> 📝 No olvides ejecutar `serverless deploy` para desplegar los últimos cambios a AWS cuando hayas terminado de desarrollar.
-
----
-
 ## 📁 Estructura del proyecto (ejemplo)
 
 ```bash
 .
 ├── src/
+│   ├── application/
+│   │   └── attended.ts
+│   │   └── getAppointments.ts
+│   │   └── index.ts
+│   │   └── publishAppointment.ts
+│   │   └── savedRecord.ts
+│   │   └── scheduling.ts
+│   ├── domain/
+│   │   └── interfaces
+│   │   │   └── appointmentResponse.ts
+│   │   └── models
+│   │   │   └── dynamo
+│   │   │   │   └── index.ts
+│   │   │   └── mysql
+│   │   │   │   └── index.ts
+│   │   │   └── index.ts
+│   │   └── index.ts
 │   ├── handlers/
+│   │   └── appointment_cl.ts
+│   │   └── appointment_pe.ts
 │   │   └── appointment.ts
-│   └── services/
-├── serverless.yml
+│   └── infrastructure/
+│       └── config
+│       │   └── index.ts
+│       └── dynamoClient
+│       │   └── index.ts
+│       └── mysqlClient
+│       │   └── cl
+│       │   │   └── index.ts
+│       │   └── pe
+│       │   │   └── index.ts
+│       │   └── index.ts
+│       └── index.ts
+├── test/
+│   ├── application/
+│   │   └── appointment_get.test.ts
+│   │   └── appointment_post_cl.test.ts
+│   │   └── appointment_post_pe.test.ts
+│   │   └── appointment_sqs.test.ts
+│   ├── application/
+│   │   └── appointment_cl_sqs.test.ts
+│   └── infrastructure/
+│       └── appointment_pe_sqs.test.ts
+├── jest.config.ts
 ├── openapi.yaml
+├── package-lock.json
+├── package.json
 ├── README.md
-└── package.json
+├── serverless.yml
+└── tsconfig.json
 ```
 
 ---
