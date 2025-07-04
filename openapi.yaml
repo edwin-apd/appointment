@@ -1,0 +1,63 @@
+openapi: 3.0.0
+info:
+  title: Appointment API
+  version: 1.0.0
+  description: API para agendamiento y consulta de citas médicas
+servers:
+  - url: https://4aggsev0f5.execute-api.us-east-1.amazonaws.com/dev
+paths:
+  /appointment:
+    get:
+      summary: Obtener todas las citas médicas
+      description: Devuelve una lista de todas las citas almacenadas en el sistema.
+      responses:
+        '200':
+          description: Lista de citas médicas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+    post:
+      summary: Agendar una cita médica
+      description: Crea una nueva cita con los datos proporcionados.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentInput'
+      responses:
+        '201':
+          description: Cita creada exitosamente
+
+components:
+  schemas:
+    AppointmentInput:
+      type: object
+      required:
+        - insuredId
+        - scheduleId
+        - countryISO
+      properties:
+        insuredId:
+          type: string
+          example: "031122"
+        scheduleId:
+          type: integer
+          example: 183
+        countryISO:
+          type: string
+          enum: [PE, CL]
+          example: CL
+
+    Appointment:
+      allOf:
+        - $ref: '#/components/schemas/AppointmentInput'
+        - type: object
+          properties:
+            status:
+              type: string
+              enum: [pending, completed]
+              example: completed
