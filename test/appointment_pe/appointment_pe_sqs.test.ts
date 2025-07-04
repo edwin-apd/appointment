@@ -1,9 +1,9 @@
-import { handler } from '../../src/handlers/appointment_cl';
+import { handler } from '../../src/handlers/appointment_pe';
 import * as app from '../../src/application';
 
 jest.mock('../../src/application');
 
-describe('AppointmentCL Handler - SQS con SNS', () => {
+describe('AppointmentPE Handler - SQS con SNS', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -12,7 +12,7 @@ describe('AppointmentCL Handler - SQS con SNS', () => {
     const mockAppointment = {
       scheduleId: 183,
       insuredId: '031122',
-      countryISO: 'CL',
+      countryISO: 'PE',
       status: 'pending'
     };
 
@@ -27,7 +27,7 @@ describe('AppointmentCL Handler - SQS con SNS', () => {
       SigningCertURL: 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService.pem',
       UnsubscribeURL: 'https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe',
       MessageAttributes: {
-        countryISO: { Type: 'String', Value: 'CL' }
+        countryISO: { Type: 'String', Value: 'PE' }
       }
     };
 
@@ -39,7 +39,7 @@ describe('AppointmentCL Handler - SQS con SNS', () => {
           attributes: {},
           messageAttributes: {},
           eventSource: 'aws:sqs',
-          eventSourceARN: 'arn:aws:sqs:us-east-1:621402808739:SQS_CL',
+          eventSourceARN: 'arn:aws:sqs:us-east-1:621402808739:SQS_PE',
           awsRegion: 'us-east-1'
         }
       ]
@@ -50,10 +50,10 @@ describe('AppointmentCL Handler - SQS con SNS', () => {
     const expectedAppointment = {
       insuredId: '031122',
       scheduleId: 183,
-      countryISO: 'CL'
+      countryISO: 'PE'
     };
 
-    expect(app.savedRecord).toHaveBeenCalledWith('CL', expectedAppointment);
-    expect(app.publishAppointmentConfirmed).toHaveBeenCalledWith('appointment.cl', expectedAppointment);
+    expect(app.savedRecord).toHaveBeenCalledWith('PE', expectedAppointment);
+    expect(app.publishAppointmentConfirmed).toHaveBeenCalledWith('appointment.pe', expectedAppointment);
   });
 });

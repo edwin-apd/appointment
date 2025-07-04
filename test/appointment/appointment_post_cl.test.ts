@@ -3,7 +3,7 @@ import * as app from '../../src/application';
 
 jest.mock('../../src/application');
 
-describe('Appointment Handler - POST', () => {
+describe('Appointment Handler - POST - CL', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -28,7 +28,7 @@ describe('Appointment Handler - POST', () => {
       body: JSON.stringify({
         insuredId: "031122",
         scheduleId: 123,
-        countryISO: "PE"
+        countryISO: "CL"
       }),
       isBase64Encoded: false
     };

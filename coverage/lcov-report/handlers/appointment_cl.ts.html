@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for application/publishAppointment.ts</title>
+    <title>Code coverage report for handlers/appointment_cl.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -19,13 +19,13 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">application</a> publishAppointment.ts</h1>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">handlers</a> appointment_cl.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">80% </span>
+                <span class="strong">84.61% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>4/5</span>
+                <span class='fraction'>11/13</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75% </span>
+                <span class="strong">83.33% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>3/4</span>
+                <span class='fraction'>10/12</span>
             </div>
         
             
@@ -82,43 +82,55 @@
 <a name='L17'></a><a href='#L17'>17</a>
 <a name='L18'></a><a href='#L18'>18</a>
 <a name='L19'></a><a href='#L19'>19</a>
-<a name='L20'></a><a href='#L20'>20</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">6x</span>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { SQSHandler } from 'aws-lambda';
 import { AppointmentMysqlModel } from '../domain';
+import { publishAppointmentConfirmed, savedRecord } from '../application';
 &nbsp;
-const eventBridge = new EventBridgeClient();
-&nbsp;
-export const publishAppointmentConfirmed = <span class="fstat-no" title="function not covered" >async </span>(source: 'appointment.pe' | 'appointment.cl', appointment: AppointmentMysqlModel) =&gt; {
-<span class="cstat-no" title="statement not covered" >    await eventBridge.send(</span>
-        new PutEventsCommand({
-            Entries: [
-                {
-                    Source: source,
-                    DetailType: 'AppointmentConfirmed',
-                    Detail: JSON.stringify(appointment),
-                    EventBusName: 'default'
-                }
-            ]
-        })
-    );
+export const handler: SQSHandler = async (event): Promise&lt;void&gt; =&gt; {
+    console.log("📨 Peticion recibida", event);
+  for (const record of event.Records) {
+    try {
+      const snsPayload = JSON.parse(record.body);
+      const appointment = JSON.parse(snsPayload.Message);
+      const newAppointment: AppointmentMysqlModel = {
+        insuredId: appointment.insuredId,
+        scheduleId: appointment.scheduleId,
+        countryISO: 'CL'
+      };
+      await savedRecord('CL', newAppointment);
+      await publishAppointmentConfirmed('appointment.cl', newAppointment);
+    } catch (err: any) {
+<span class="cstat-no" title="statement not covered" >      console.error('⚠️ No se pudo parsear como SNS. Mensaje bruto:', record.body);</span>
+<span class="cstat-no" title="statement not covered" >      console.error('⚠️ Error', err.message);</span>
+    }
+  }
 };
 &nbsp;</pre></td></tr></table></pre>
 
