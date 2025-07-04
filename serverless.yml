@@ -1,0 +1,223 @@
+org: libraedwin
+service: app
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: dev
+  stackName: appointment-dev-stack
+  environment:
+    SNS_TOPIC_ARN:
+      Ref: AppointmentTopic
+    BD_HOST_PE: bd-test-appointment-pe.cpy02qemskfv.us-east-2.rds.amazonaws.com
+    BD_PORT_PE: 3306
+    BD_USER_PE: admin
+    DB_PASSWORD_PE: 71120253
+    BD_HOST_CL: bd-test-appointment-cl.cpy02qemskfv.us-east-2.rds.amazonaws.com
+    BD_PORT_CL: 3306
+    BD_USER_CL: admin
+    DB_PASSWORD_CL: 71120253
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:Query
+        - dynamodb:UpdateItem
+        - dynamodb:Scan
+      Resource:
+        - !GetAtt AppointmentTable.Arn
+
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource:
+        - !Ref AppointmentTopic
+
+    - Effect: Allow
+      Action:
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+        - sqs:GetQueueAttributes
+        - sqs:SendMessage
+      Resource:
+        - !GetAtt SQSPEQueue.Arn
+        - !GetAtt SQSCLQueue.Arn
+        - !GetAtt ResultQueue.Arn
+
+    - Effect: Allow
+      Action:
+        - events:PutEvents
+      Resource: "*"
+
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+functions:
+
+  # 1. Entrada por HTTP
+  appointment:
+    handler: src/handlers/appointment.handler
+    events:
+      - http:
+          path: /appointment
+          method: post
+      - http:
+          path: /appointment
+          method: get
+      - sqs:
+          arn:
+            Fn::GetAtt: [ResultQueue, Arn]
+
+  # 4. Procesamiento por país
+  appointment_pe:
+    handler: src/handlers/appointment_pe.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [SQSPEQueue, Arn]
+
+  appointment_cl:
+    handler: src/handlers/appointment_cl.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [SQSCLQueue, Arn]
+
+resources:
+  Resources:
+
+    # DynamoDB Table
+    AppointmentTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: AppointmentTable
+        AttributeDefinitions:
+          - AttributeName: insuredId
+            AttributeType: S
+          - AttributeName: scheduleId
+            AttributeType: N
+        KeySchema:
+          - AttributeName: insuredId
+            KeyType: HASH
+          - AttributeName: scheduleId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+
+    ### SNS Topic ###
+    AppointmentTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: appointment-topic
+
+    ### SQS Queues PE###
+    SQSPEQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: SQS_PE
+
+    SQSPEQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref SQSPEQueue
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action: "SQS:SendMessage"
+              Resource: !GetAtt SQSPEQueue.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !Ref AppointmentTopic
+
+    ### SQS Queues CL###
+    SQSCLQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: SQS_CL
+
+    SQSCLQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref SQSCLQueue
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action: "SQS:SendMessage"
+              Resource: !GetAtt SQSCLQueue.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !Ref AppointmentTopic
+
+    ### SQS Queues Respuesta###
+    ResultQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: appointment-result-sqs
+
+    ResultQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref ResultQueue
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: events.amazonaws.com
+              Action: sqs:SendMessage
+              Resource: !GetAtt ResultQueue.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !GetAtt AppointmentResultRule.Arn
+
+    ### SNS Subscriptions con filtros por país ###
+    SnsSubscriptionPE:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        TopicArn: !Ref AppointmentTopic
+        Endpoint: !GetAtt SQSPEQueue.Arn
+        FilterPolicy:
+          countryISO:
+            - "PE"
+
+    SnsSubscriptionCL:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        TopicArn: !Ref AppointmentTopic
+        Endpoint: !GetAtt SQSCLQueue.Arn
+        FilterPolicy:
+          countryISO:
+            - "CL"
+
+    ### EventBridge Rule ###
+    AppointmentResultRule:
+      Type: AWS::Events::Rule
+      Properties:
+        Name: appointment-result-rule
+        EventPattern:
+          source:
+            - "appointment.pe"
+            - "appointment.cl"
+        Targets:
+          - Arn: !GetAtt ResultQueue.Arn
+            Id: "SendToResultQueue"
+
+custom:
+  esbuild:
+    bundle: true
+    target: node20
+    platform: node
+    sourcemap: true
+    concurrency: 10
