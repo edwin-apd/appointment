@@ -3,6 +3,7 @@ import { AppointmentMysqlModel } from '../domain';
 import { publishAppointmentConfirmed, savedRecord } from '../application';
 
 export const handler: SQSHandler = async (event): Promise<void> => {
+    console.log("📨 Peticion recibida", event);
   for (const record of event.Records) {
     try {
       const snsPayload = JSON.parse(record.body);
