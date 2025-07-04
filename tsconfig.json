@@ -5,10 +5,16 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
+    "isolatedModules": true,
     "outDir": ".build",
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": [
+      "jest",
+      "node"
+    ]
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }
